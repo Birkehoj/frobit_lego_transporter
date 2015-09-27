@@ -111,6 +111,12 @@ class WallExtractorNode():
             # Points in Cartesian coordinates.
             points = np.array([pol2cart(dist, angle) for dist, angle in itertools.izip(ranges, angles)])
 
+            # Try find a single line
+            middle_model, middle_inliers = ransac(left_points, LineModel, min_samples=10, residual_threshold=0.05, max_trials=100)
+            middle_line_x = np.array([points[middle_inliers[0], 0], points[middle_inliers[-1], 0]])
+            middle_line_y = left_model.predict_y(middle_line_x)
+            self.publish_visualization_marker(middle_line_x, middle_line_y, Marker.LINE_STRIP, "middle_line", (1.0, 1.0, 1.0))
+
             # Split points in the middle.
             left_points = points[:len(points) / 2]
             right_points = points[len(points) / 2:]
