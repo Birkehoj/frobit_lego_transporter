@@ -10,9 +10,6 @@
     <remap from="/fmKnowledge/pose" to="/odom" />
 
 
-    <node name="laser_transform" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 base_laser_link laser 100" respawn="false" output="screen">
-    </node>
-
     <node name="sick_tim310s01" pkg="sick_tim" type="sick_tim310s01" respawn="false" output="screen">
         <!-- default values: -->
         <!--
@@ -100,4 +97,8 @@
             <param name="avatar_reverse" value="false" />
         </node>
     </group>
+
+    <node name="laser_transform" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 base_laser_link laser 100" respawn="false" output="screen">
+    </node>
+
 </launch>
