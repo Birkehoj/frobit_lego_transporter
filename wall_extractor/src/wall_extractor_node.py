@@ -112,10 +112,11 @@ class WallExtractorNode():
             points = np.array([pol2cart(dist, angle) for dist, angle in itertools.izip(ranges, angles)])
 
             # Try find a single line
-            middle_model, middle_inliers = ransac(left_points, LineModel, min_samples=10, residual_threshold=0.05, max_trials=100)
-            middle_line_x = np.array([points[middle_inliers[0], 0], points[middle_inliers[-1], 0]])
-            middle_line_y = left_model.predict_y(middle_line_x)
-            self.publish_visualization_marker(middle_line_x, middle_line_y, Marker.LINE_STRIP, "middle_line", (1.0, 1.0, 1.0))
+            middle_model, middle_inliers = ransac(points, LineModel, min_samples=10, residual_threshold=0.1, max_trials=500)
+            middle_line_x = np.array([min(points[middle_inliers, 0]), max(points[middle_inliers, 0])])
+            middle_line_y = middle_model.predict_y(middle_line_x)
+            self.publish_visualization_marker(middle_line_x, middle_line_y, Marker.LINE_STRIP, "line_middle", (1.0, 1.0, 1.0))
+            self.publish_visualization_marker(points[middle_inliers, 0], points[middle_inliers, 1], Marker.POINTS, "middle_inliers", (0.8, 0.8, 0.8))
 
             # Split points in the middle.
             left_points = points[:len(points) / 2]
