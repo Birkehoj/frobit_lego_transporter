@@ -2,7 +2,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <msgs/row.h>
-#include <msgs/IntStamped.h>
+#include <msgs/BoolStamped.h>
 #include <cmath>
 #include <msgs/FloatArrayStamped.h>
 #include <vector>
@@ -11,7 +11,7 @@ using namespace std;
 using namespace ros;
 
 void wallCallback(const msgs::row::ConstPtr& wallPtr);
-void wallEnableCallback(const msgs::IntStamped& enable);
+void wallEnableCallback(const msgs::BoolStamped& enable);
 double getMovingGoalTargetAngle();
 void callbackPid(const ros::TimerEvent&);
 
@@ -104,10 +104,10 @@ double getMovingGoalTargetAngle()
 {
     double closetMovingGoalAngle = atan2(targetDist, distError);
     double movingGoalTargetAngle = M_PI_2 - closetMovingGoalAngle - angleError;
-    return movingGoalTargetAngle;
+    return -movingGoalTargetAngle;
 }
 
-void wallEnableCallback(const msgs::IntStamped& enable)
+void wallEnableCallback(const msgs::BoolStamped& enable)
 {
-    wallFollowEnabled = (enable.data == 1);
+    wallFollowEnabled = enable.data;
 }

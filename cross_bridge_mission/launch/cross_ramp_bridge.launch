@@ -1,0 +1,166 @@
+<!-- frobit launch file
+-->
+<launch>
+    <!-- frobit parameters -->
+    <param name="diff_steer_wheel_distance" value="0.375"/>
+    <param name="ticks_per_meter_left" value="677" />
+    <param name="ticks_per_meter_right" value="677" />
+
+    <!-- <node pkg="rosbag" name="rosbag_record" type="record" args="-a"/> -->
+
+    <group ns="fmSafety">
+        <node pkg="basic_incident_handler" name="incident_handler" type="basic_incident_handler_node.py" output="screen">
+            <param name="deadman_enable" value="True" />
+            <param name="deadman_timeout" value="0.100" />
+            <param name="deadman_sub" value="/fmSafe/deadman" />
+            <param name="critical_fault_enable" value="False" />
+            <param name="critical_fault_timeout" value="0.100" />
+            <param name="critical_fault_sub" value="/fmSafe/critical_fault" />
+            <param name="actuation_enable_pub" value="/fmSafe/actuation_enable" />
+        </node>
+    </group>
+
+    <group ns="fmSensors">
+
+    </group>
+
+    <group ns="fmProcessors">
+        <node pkg="frobit_lego_transporter" name="wall_extractor" type="wall_extractor_node.py" output="screen">
+            <param name="laser_scan_sub" value="/external/scan"/>
+            <param name="ransac_debug_marker" value="/ransac_debug_marker" />
+            <param name="walls" value="/perception/walls" />
+        </node>
+	    <node pkg="differential_odometry" name="differential_odometry" type="differential_odometry_node" output="screen" >
+		    <param name="enc_left_sub" value="/fmInformation/encoder_left" />
+		    <param name="enc_right_sub" value="/fmInformation/encoder_right" />
+		    <param name="imu_sub" value="/fmInformation/imu" />
+		    <param name="odom_reset_sub" value="/fmInformation/odom_reset" />
+		    <param name="odom_pub" value="/fmKnowledge/odometry" />
+		    <param name="encoder_output" value="relative"></param>  
+		    <param name="ticks_per_meter_left" value="-620"></param>  
+		    <param name="ticks_per_meter_right" value="-620"></param>  
+		    <param name="max_ticks_per_update" value="200" />
+		    <param name="yaw_angle_source" value="imu_angular_velocity"></param>  
+		    <param name="imu_angular_velocity_yaw_axis" value="z"></param> 
+		    <param name="vehicle_frame" value="base_footprint"></param>      
+		    <param name="odom_estimate_frame" value="/odom_combined"></param>      
+	    </node>
+    </group>
+
+    <group ns="fmDecisionMakers">
+        <node pkg="cross_bridge_mission" name="mission" type="cross_bridge_mission_node" output="screen">
+            <param name="automode_sub" value="/fmPlan/automode"/>
+            <param name="odom_sub" value="/odom" />
+            <param name="straight_drive_pub" value="/straight_enb" />
+            <param name="wall_follow_drive_pub" value="/wall_follow_enb" />
+            <param name="dist_to_nonsafe_begin" value="0.8" />
+            <param name="dist_to_nonsafe_end" value="1.1" />
+            <param name="vel_cmd_pub" value="/fmCommand/vel_cmd" />
+            <param name="disable_safety_pub" value="/disable_safety" />
+        </node>
+    </group>
+
+    <group ns="fmExecutors">
+        <node pkg="wall_follow_control" name="wall_follower" type="wall_follow_control_node" output="screen">
+            <param name="update_rate" value="20"/>
+            <param name="drive_kp" value="2.0"/>
+            <param name="drive_ki" value="0.2"/>
+			<param name="drive_max_i" value="1" />
+            <param name="drive_kd" value=".5"/>
+            <param name="drive_feed_forward" value="0.00"/>
+            <param name="drive_max_output" value="0.4"/>
+			<param name="forward_speed" value="0.5" />
+            <param name="walls_sub" value="/perception/walls" />
+            <param name="automode_sub" value="/fmPlan/automode" />			
+			<param name="pid_debug_pub" value="/fmInformation/pid" />
+			<param name="command_pub" value="/fmCommand/cmd_vel" />
+        </node>
+
+    <node pkg="drive_straight" name="drive_straight_node" type="drive_straight_node" output="screen">
+        <param name="drive_speed" value="0.4" />
+        <param name="straight_drive_enb_sub" value="/straight_enb" />
+        <param name="straight_vel_pub" value="/fmCommand/cmd_vel" />        
+    </node>
+    </group>
+
+    <group ns="fmControllers">
+        <!-- Frobit interface node -->
+        <node pkg="sdu_frobit_v2" name="frobit" type="frobit_interface_node.py" output="screen" >
+            <param name="actuation_enable_sub" value="/fmSafe/actuation_enable" />
+            <param name="cmd_vel_sub" value="/safe_vel" />
+            <param name="enc_left_pub" value="/fmInformation/encoder_left" />
+            <param name="enc_right_pub" value="/fmInformation/encoder_right" />
+            <param name="wheel_status_left_pub" value="/fmInformation/wheel_status_left" />
+            <param name="wheel_status_right_pub" value="/fmInformation/wheel_status_right" />
+            <param name="wheel_feedback_left_pub" value="/fmInformation/wheel_feedback_left" />
+            <param name="wheel_feedback_right_pub" value="/fmInformation/wheel_feedback_right" />
+            <param name="wheel_pid_left_pub" value="/fmInformation/wheel_pid_left" />
+            <param name="wheel_pid_right_pub" value="/fmInformation/wheel_pid_right" />
+            <param name="nmea_from_frobit_sub" value="/fmSignal/nmea_from_frobit" />
+            <param name="nmea_to_frobit_pub" value="/fmSignal/nmea_to_frobit" />
+            <param name="publish_wheel_status_rate" value="10" />
+            <param name="publish_wheel_feedback_rate" value="10" />
+            <param name="publish_wheel_pid_rate" value="10" />
+            <param name="castor_front" value="true"/>
+            <param name="max_linear_acceleration" value="16.2"/>
+            <param name="max_angular_acceleration" value="16.0"/>
+            <param name="wheel_drive_feed_forward" value="85" />
+            <param name="wheel_drive_kp" value="5" />
+            <param name="wheel_drive_ki" value="10" />
+            <param name="wheel_drive_kd" value="5" />
+            <param name="wheel_drive_max_integral_output" value="300" />
+            <param name="wheel_turn_feed_forward" value="110" />
+            <param name="wheel_turn_kp" value="10" />
+            <param name="wheel_turn_ki" value="20" />
+            <param name="wheel_turn_kd" value="3" />
+            <param name="wheel_turn_max_integral_output" value="300" />
+            <param name="supply_voltage_scale_factor" value="0.03747" />
+            <param name="min_supply_voltage" value="12.1" />
+            <param name="show_voltage_interval" value="300" />
+        </node>
+    </group>
+
+    <group ns="fmLib">
+
+        <!-- frobit serial device and protocol interface -->
+        <node pkg="serial_nmea" name="frobit_nmea" type="serial_nmea_node" respawn="true" output="screen">
+            <param name="nmea_from_device_pub" value="/fmSignal/nmea_from_frobit"/>
+            <param name="nmea_to_device_sub" value="/fmSignal/nmea_to_frobit"/>
+            <param name="serial_device" value="/dev/frobit"/>
+            <param name="serial_baudrate" value="57600"/>
+            <param name="use_nmea_checksum" value="true"/>
+        </node>
+
+    </group>
+
+    <!-- Nodes not related to frobomind -->
+    <group ns="external">
+        <!-- SICK scanner drivers from sick_tim ROS package -->
+        <node name="sick_tim310s01" pkg="sick_tim" type="sick_tim310s01" respawn="false" output="screen">
+            <!--param name="min_ang" type="double" value="-2.35619449019" />
+            <param name="max_ang" type="double" value="2.35619449019" />
+            <param name="intensity" type="bool" value="True" />
+            <param name="skip" type="int" value="0" />
+            <param name="frame_id" type="str" value="laser" />
+            <param name="time_offset" type="double" value="-0.001" />
+            <param name="publish_datagram" type="bool" value="False" /-->
+        </node>
+    </group>
+
+    <node pkg="safety_speed_node" name="obstacle_detector" type="lidar_obstacle_node.py" output="screen">
+        <param name="reg_ratio_topic" value="/reg_ratio"/>
+        <param name="scan_topic" value="/external/scan"/>
+    </node>
+
+    <node pkg="safety_speed_node" name="safety_speed" type="safety_speed_node.py" output="screen">
+        <param name="vel_topic" value="/fmCommand/cmd_vel"/>
+        <param name="safe_vel_topic" value="/safe_vel"/>
+        <param name="reg_ratio_topic" value="/reg_ratio"/>
+    </node>
+
+
+
+    <node pkg="rosserial_python" name="rosserial_python" type="serial_node.py" output="screen" args="/dev/ttyACM0" >
+    </node>
+
+</launch>

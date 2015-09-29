@@ -8,7 +8,7 @@ input: linear_velocity, angular_velocity, speed_regulation
 import rospy
 from geometry_msgs.msg import TwistStamped
 from msgs.msg import FloatArrayStamped
-
+from msgs.msg import BoolStamped
 
 class Node():
     def __init__(self):
@@ -18,17 +18,16 @@ class Node():
         vel_topic = rospy.get_param('~vel_topic', '/fmCommand/cmd_vel')
         safe_vel_topic = rospy.get_param('~safe_vel_topic', '/safe_vel')       # topic name TODO
         reg_ratio_topic = rospy.get_param('~reg_ratio_topic', '/reg_ratio')     # topic name TODO
-
+        disable_safety_topic = rospy.get_param('~disable_safety_topic', '/disable_safety')
         # setup variables
         self.vel_lin = 0.0
         self.vel_ang = 0.0
         self.regulation_ratio = [0, 0]
-        self.safetyOn = True
-
+        self.safetyOff = False
         # setup subscription topics
         rospy.Subscriber(vel_topic, TwistStamped, self.on_vel_topic)
         rospy.Subscriber(reg_ratio_topic, FloatArrayStamped, self.on_reg_ratio_topic)
-
+        rospy.Subscriber(disable_safety_topic, BoolStamped, self.on_disable_safety)
         # setup publication topics
         self.safe_vel_msg = TwistStamped()
         self.safe_vel_pub = rospy.Publisher(safe_vel_topic, TwistStamped, queue_size=1)
@@ -36,6 +35,9 @@ class Node():
         # frequency of node activity
         self.r = rospy.Rate(self.update_rate)
         self.updater()
+
+    def on_disable_safety(self, msg):
+        self.safetyOff = msg.data
 
     ''' Reads unregulated velocities '''
     def on_vel_topic(self, msg):
@@ -63,7 +65,15 @@ class Node():
     ''' Calls the publish function, based on the update_rate [Hz] '''
     def updater(self):
         while not rospy.is_shutdown():
-            self.publish_safe_vel_message()
+            if self.safetyOff == True:
+                vel_msg = TwistStamped()
+                vel_msg.header.stamp = rospy.Time.now()
+                vel_msg.twist.linear.x = self.vel_lin
+                vel_msg.twist.angular.z = self.vel_ang
+                self.safe_vel_pub.publish(vel_msg)
+            else :
+                self.publish_safe_vel_message()
+
             self.r.sleep()
 
 
@@ -77,3 +87,4 @@ if __name__ == '__main__':
         node_class = Node()
     except rospy.ROSInterruptException:
         pass
+
